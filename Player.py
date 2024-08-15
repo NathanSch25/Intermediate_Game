@@ -4,7 +4,7 @@ from dotenv import load_dotenv, find_dotenv
 import os
 from pymongo import MongoClient
 load_dotenv(find_dotenv())
-MONGODB_PWD = "##########"
+MONGODB_PWD = "#######"
 
 #password = os.environ.get("MONGODB_PWD")
 connection_string = f"mongodb+srv://nathanschober25:{MONGODB_PWD}@vio.ei7bb.mongodb.net/?retryWrites=true&w=majority&appName=Vio"
@@ -32,16 +32,16 @@ class Player:
     """
     def __init__(self, name = "",maxHealth = 1, maxArmor = 1, baseStreangth = 1,element = "Terra",lvl = 1, currExp = 0):
         self.name = name
-        self.health = maxHealth
-        self.maxHealth = maxHealth
-        self.armor = maxArmor
-        self.maxArmor = maxArmor
-        self.element = element
-        self.basestreangth = baseStreangth
-        self.lvl = lvl
-        self.currExp = currExp
-        self.lvlPoints = 0
-        self.currFloor = 1
+        # self.health = maxHealth
+        # self.maxHealth = maxHealth
+        # self.armor = maxArmor
+        # self.maxArmor = maxArmor
+        # self.element = element
+        # self.basestreangth = baseStreangth
+        # self.lvl = lvl
+        # self.currExp = currExp
+        # self.lvlPoints = 0
+        # self.currFloor = 1
         self.inventory = Inventory()
         if self.name != "null":
             document = {
@@ -53,14 +53,14 @@ class Player:
             "base_strength": baseStreangth,
             "curr_strength": baseStreangth,
             "element": element,
-            "curr_exp": 0,
-            "lvl": 1,
+            "curr_exp": currExp,
+            "lvl": lvl,
             "curr_floor": 1,
             "inventory": [[None],[None],[None],[None],[None]],
             "lvl_points": 0
             }
             player_cluster.insert_one(document)
-            
+               
 #geters
     def FindUser(self, userName):
         if player_cluster.find_one({"user_name": userName}):
@@ -145,9 +145,9 @@ class Player:
         curr = curr["curr_exp"]
         
         if curr >= 100:
-            player_cluster.update_one({"$inc": {"lvl": 1}})
-            player_cluster.update_one({"$set": {"curr_exp": 0}})
-            player_cluster.update_one({"$inc": {"lvl_points": 1}})
+            player_cluster.update_one({"user_name": self.name}, {"$inc": {"lvl": 1}})
+            player_cluster.update_one({"user_name": self.name}, {"$set": {"curr_exp": 0}})
+            player_cluster.update_one({"user_name": self.name}, {"$inc": {"lvl_points": 1}})
     def ChangeFloor(self, inc):
         player_cluster.update_one({"user_name": self.name}, {"$inc": {"curr_floor": inc}})      
     def Kill(self):
@@ -173,7 +173,7 @@ class Player:
             while armor != 0:
                 armor = armor + 1
                 temp = temp + 1
-            player_cluster.update_one({"user_name": self.name}, {"$inc": {"curr_health": temp}}) 
+            player_cluster.update_one({"user_name": self.name}, {"$inc": {"curr_health": (-abs(temp))}}) 
     def Stats(self):
         collumn = {"curr_health": 1}
         health = player_cluster.find_one({"user_name": self.name}, collumn)

@@ -121,7 +121,7 @@ def MainMenu(P1):
 
 #player generation
 userName = input("what is your user Name?")
-P1 = Player.Player("null",1,1,1)
+P1 = Player.Player(userName)
 
 exists = P1.FindUser(userName)
 if exists:

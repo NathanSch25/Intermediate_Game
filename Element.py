@@ -31,7 +31,7 @@ class Elements:
                     case "Terra":
                         return self.Weak()
                     case "Ignis":
-                        return self.Weak()
+                        return 0
                     case "Aqua":
                         return 0
                     case "Caeli":
