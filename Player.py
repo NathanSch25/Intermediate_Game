@@ -4,15 +4,33 @@ from dotenv import load_dotenv, find_dotenv
 import os
 from pymongo import MongoClient
 load_dotenv(find_dotenv())
-MONGODB_PWD = "#######"
+#temperorary
+password = ""
 
+#establising connection to DB
 #password = os.environ.get("MONGODB_PWD")
-connection_string = f"mongodb+srv://nathanschober25:{MONGODB_PWD}@vio.ei7bb.mongodb.net/?retryWrites=true&w=majority&appName=Vio"
+connection_string = f"mongodb+srv://nathanschober25:{password}@vio.ei7bb.mongodb.net/?retryWrites=true&w=majority&appName=Vio"
 client = MongoClient(connection_string)
 dbs = client["Vio"]
-player_cluster = dbs.player
 
-class Player:
+#assigning clusters to global variables
+player_cluster = dbs.player
+item_cluster = dbs.Items
+
+#universal functions
+def GetItemStat(itemName, feild):
+    columns = {feild: 1}
+    item = item_cluster.find_one({"user_name": itemName}, columns)
+    item = item[feild]
+    return item 
+def GetPlayerStat(playerName, feild):
+    columns = {feild: 1}
+    Stat = player_cluster.find_one({"user_name": playerName}, columns)
+    Stat = Stat[feild]
+    return Stat
+
+#classes
+class Player:    
     """ player_cluster format{
     "user_name": "",
     "max_health": 1,
@@ -25,7 +43,7 @@ class Player:
     "curr_exp": 1,
     "lvl": 1,
     "curr_floor": 1,
-    "inventory": [[][][][][]],
+    "inventory": [["hotBar"]["Stash"]],
     "lvl_points": 1
         inventory items: [name, lvl, type]
     }
@@ -42,7 +60,7 @@ class Player:
         # self.currExp = currExp
         # self.lvlPoints = 0
         # self.currFloor = 1
-        self.inventory = Inventory()
+        
         if self.name != "null":
             document = {
             "user_name": name,
@@ -56,7 +74,7 @@ class Player:
             "curr_exp": currExp,
             "lvl": lvl,
             "curr_floor": 1,
-            "inventory": [[None],[None],[None],[None],[None]],
+            "inventory": [[None],[None]],
             "lvl_points": 0
             }
             player_cluster.insert_one(document)
@@ -69,40 +87,19 @@ class Player:
             return False        
     def Lvl(self):
         #player_cluster.find_one({"user_name": self.name})
-        columns = {"lvl": 1}
-        lvl = player_cluster.find_one({"user_name": self.name}, columns)
-        lvl = lvl["lvl"]
-        return lvl
+        return GetPlayerStat(self.name, "lvl")
     def CurrExp(self):
-        columns = {"curr_exp": 1}
-        exp = player_cluster.find_one({"user_name": self.name}, columns) 
-        exp = exp["curr_exp"]
-        return exp  
+        return GetPlayerStat(self.name, "curr_exp")  
     def CurrPoints(self):
-        columns = {"lvl_points": 1}
-        points = player_cluster.find_one({"user_name": self.name}, columns) 
-        points = points["lvl_points"]
-        return points    
+        return GetPlayerStat(self.name, "lvl_points")    
     def Health(self):
-        columns = {"curr_health": 1}
-        health = player_cluster.find_one({"user_name": self.name}, columns)
-        health = health["curr_health"]
-        return health  
+        return GetPlayerStat(self.name, "curr_health") 
     def str(self):
-        columns = {"base_strength": 1}
-        strength = player_cluster.find_one({"user_name": self.name}, columns)
-        strength = strength("base_strength")
-        return strength
+        return GetPlayerStat(self.name, "base_strength")
     def CurrFloor(self):
-        columns = {"curr_floor": 1}
-        floor = player_cluster.find_one({"user_name": self.name}, columns)
-        floor = floor["curr_floor"]
-        return floor
+        return GetPlayerStat(self.name, "curr_floor")
     def CurrElmnt(self):
-        columns = {"element": 1}
-        element = player_cluster.find_one({"user_name": self.name}, columns)
-        element = element["element"]
-        return element
+        return GetPlayerStat(self.name, "element")
     
     def Stash(self):
         return (self.inventory).Stash()
@@ -113,24 +110,16 @@ class Player:
         return (self.inventory).Stash() 
 #mutators
     def IncHealth(self, inc):
-        columns = {"max_health": 1}
-        max = player_cluster.find_one({"user_name": self.name}, columns)
-        max = max["max_health"]
-        columns = {"curr_health": 1}
-        curr = (player_cluster.find_one({"user_name": self.name}, columns))
-        curr = curr["curr_health"]
+        max = GetPlayerStat(self.name, "max_health")
+        curr = GetPlayerStat(self.name, "curr_health")
         
         if ((curr + inc) <= max):
             player_cluster.update_one({"user_name": self.name}, {"$inc": {"curr_health": inc}})
         else:
             player_cluster.update_one({"user_name": self.name}, {"$set": {"curr_health": max}})
     def IncArmor(self, inc):
-        columns = {"max_armor": 1}
-        max = player_cluster.find_one({"user_name": self.name}, columns)
-        max = max["max_armor"]
-        columns = {"curr_armor": 1}
-        curr = (player_cluster.find_one({"user_name": self.name}, columns))
-        curr = curr["curr_armor"]
+        max = GetPlayerStat(self.name, "max_armor")
+        curr = GetPlayerStat(self.name, "curr_armor")
         
         if ((curr + inc) <= max):
             player_cluster.update_one({"user_name": self.name}, {"$inc": {"curr_armor": inc}})
@@ -162,9 +151,7 @@ class Player:
 
 #fight Code
     def Hurt(self, damage):
-        collumn = {"curr_armor": 1}
-        armor = player_cluster.find_one({"user_name": self.name}, collumn)
-        armor = armor["curr_armor"]
+        armor = max = GetPlayerStat(self.name, "curr_armor")
         
         armor -= damage
         if armor <= 0:
@@ -175,59 +162,38 @@ class Player:
                 temp = temp + 1
             player_cluster.update_one({"user_name": self.name}, {"$inc": {"curr_health": (-abs(temp))}}) 
     def Stats(self):
-        collumn = {"curr_health": 1}
-        health = player_cluster.find_one({"user_name": self.name}, collumn)
-        health = health["curr_health"]
-        collumn = {"curr_armor": 1}
-        armor = player_cluster.find_one({"user_name": self.name}, collumn)
-        armor = armor["curr_armor"]
-        collumn = {"base_strength": 1}
-        strength = player_cluster.find_one({"user_name": self.name}, collumn) 
-        strength = strength["base_strength"]
-        collumn = {"element": 1}
-        element = player_cluster.find_one({"user_name": self.name}, collumn)
-        element = element["element"]
+        health = GetPlayerStat(self.name, "curr_health")
+        armor = GetPlayerStat(self.name, "curr_armor")
+        strength = GetPlayerStat(self.name, "base_strength")
+        element = GetPlayerStat(self.name, "element")
         
         print(self.name, " health is", health)
         print(self.name, " armor is", armor)
         print(self.name, " streangth is", strength)
         print(self.name, " Elemental afinity is: ", element)        
     def Attack(self, opponentElmnt):
-        collumn = {"element": 1}
-        element = player_cluster.find_one({"user_name": self.name}, collumn)
-        element = element["element"]
-        collumn = {"base_strength": 1}
-        strength = player_cluster.find_one({"user_name": self.name}, collumn) 
-        strength = strength["base_strength"] 
+        element = GetPlayerStat(self.name, "element") 
+        strength = GetPlayerStat(self.name, "base_strength") 
         
         elmnt = Element.Elements()
         return elmnt.Check(element, opponentElmnt) + strength   
     def Heal(self):
-        collumn = {"max_health": 1}
-        max = player_cluster.find_one({"user_name": self.name}, collumn)
-        max = max["max_health"]
-        collumn = {"lvl": 1}
-        lvl = player_cluster.find_one({"user_name": self.name}, collumn) 
-        lvl = lvl["lvl"] 
+        max = GetPlayerStat(self.name, "max_health")
+        lvl = GetPlayerStat(self.name, "lvl")
         player_cluster.update_one({"user_name": self.name}, {"$inc": {"curr_health": lvl}})
-        collumn = {"curr_health": 1}
-        curr = player_cluster.find_one({"user_name": self.name}, {"user_name": self.name}, collumn)
-        curr = curr["curr_health"]
+        curr = GetPlayerStat(self.name, "curr_health")
         
         if curr > max:
             player_cluster.update_one({"user_name": self.name}, {"$set": {"curr_health": max}})          
     def Revive(self):
-        collumn = {"max_health": 1}
-        max = player_cluster.find({"user_name": self.name}, collumn)
+        max = GetPlayerStat(self.name, "max_health")
         player_cluster.update_one({"user_name": self.name}, {"$set": {"curr_health": max}})
     def Block(self):
-        collumn = {"lvl": 1}
-        lvl = player_cluster.find({"user_name": self.name}, collumn)
-        lvl = lvl["lvl"]
+        lvl = GetPlayerStat(self.name, "lvl")
         player_cluster.update_one({"user_name": self.name}, {"inc": {"curr_armor": lvl}})
         
-class Inventory:
-    #Types == Weapon, Helmet, Chest, Leggings, Item
+class ItemSearch:
+    #Types == Weapon, Helmet, Chest, Leggings, Item 
     ''' item format in cluster{
         "name": "",
         "type": "",
@@ -238,55 +204,46 @@ class Inventory:
         "health_buff": 1,
         "element_buff": 1,
         "damage_buff": 1,
-        "description": "",
-        "active": True
+        "description": ""
     }
-    
     '''
-    def __init__(self):
-        self.stash = [[None], [None], [None], [None], [None]]
-        self.hotBar = [None, None, None, None, None]
+    def __init__(self, name):
+        self.name = name
     
-    def Stash(self):
-        return self.stash
-    def HotBar(self):
-        return self.hotBar
+    #Getters
+    def type(self):
+        return GetItemStat(self.name, "type")
+    def lvl_needed(self):
+        return GetItemStat(self.name, "lvl_needed")
+    def element(self):
+        return GetItemStat(self.name, "element")
+    def base_dmg(self):
+        return GetItemStat(self.name, "base_dmg")
+    def armor_buff(self):
+        return GetItemStat(self.name, "armor_buff")
+    def health_buff(self):
+        return GetItemStat(self.name, "health_buff")
+    def element_buff(self):
+        return GetItemStat(self.name, "element_buff")
+    def damage_buff(self):
+        return GetItemStat(self.name, "damage_buff")
+    def description(self):
+        return GetItemStat(self.name, "description")
     
-    
-    def AddItem(self, item):
-        match item[0]:
-            case "Weapon":
-                ((self.stash)[0]).append(item)
-            case "Helmet":
-                ((self.stash)[1]).append(item)
-            case "Chest":
-                ((self.stash)[2]).append(item)
-            case "Leggings":
-                ((self.stash)[3]).append(item)
-            case "Item":
-                ((self.stash)[4]).append(item)
-    def RemoveItem(self, item):
-        match item[0]:
-            case "Weapon":
-                for i in (self.stash)[0]:
-                    if i == item[1]:
-                        (self.stash)[0].pop(i)
-            case "Helmet":
-                for i in (self.stash)[1]:
-                    if i == item[1]:
-                        (self.stash)[1].pop(i)
-            case "Chest":
-                for i in (self.stash)[2]:
-                    if i == item[1]:
-                        (self.stash)[2].pop(i)
-            case "Leggings":
-                for i in (self.stash)[3]:
-                    if i == item[1]:
-                        (self.stash)[3].pop(i)
-            case "Item":
-                for i in (self.stash)[4]:
-                    if i == item[1]:
-                        (self.stash)[4].pop(i)
-
+    #mutators
+    def CreateItem(self):
+        document = {         
+            "name": str(input("name: ")),
+            "type": str(input("type (Weapon, Helmet, Chest, Leggings, Item): ")),
+            "lvl_needed": int(input("lvl needed: ")),
+            "element": str(input("element: ")),
+            "base_dmg": int(input("base damage: ")),
+            "armor_buff": int(input("armor buff: ")),
+            "health_buff": int(input("health buff: ")),
+            "element_buff": int(input("element_buff: ")),
+            "damage_buff": int(input("damage_buff: ")),
+            "description": str(input("description: "))
+        }
+        item_cluster.insert_one(document)
 
 
