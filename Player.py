@@ -48,20 +48,11 @@ class Player:
         inventory items: [name, lvl, type]
     }
     """
+     
     def __init__(self, name = "",maxHealth = 1, maxArmor = 1, baseStreangth = 1,element = "Terra",lvl = 1, currExp = 0):
         self.name = name
-        # self.health = maxHealth
-        # self.maxHealth = maxHealth
-        # self.armor = maxArmor
-        # self.maxArmor = maxArmor
-        # self.element = element
-        # self.basestreangth = baseStreangth
-        # self.lvl = lvl
-        # self.currExp = currExp
-        # self.lvlPoints = 0
-        # self.currFloor = 1
         
-        if self.name != "null":
+        if not(self.FindUser(self.name)):
             document = {
             "user_name": name,
             "max_health": maxHealth,
